@@ -1,9 +1,20 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 #include "rfid.h"
+#include "user.h"
 
-void create_rfid_tag(RFIDTag tags[], int *tag_count) {
+int is_hex_string(const char *str) {
+    while (*str) {
+        if (!isxdigit(*str)) {
+            return 0; // Não é um caractere hexadecimal
+        }
+        str++;
+    }
+    return 1; // É uma string hexadecimal válida
+}
+
+void create_rfid_tag(RFIDTag tags[], int *tag_count, User users[], int user_count) {
     RFIDTag new_tag;
 
     printf("Criando nova TAG RFID...\n");
@@ -11,17 +22,28 @@ void create_rfid_tag(RFIDTag tags[], int *tag_count) {
     scanf("%d", &new_tag.user_id);
     getchar(); // Limpar o buffer de entrada
 
+    // Verificar se o ID do usuário existe
+    if (!user_exists(users, user_count, new_tag.user_id)) {
+        printf("Erro: ID do usuário não encontrado.\n");
+        return;
+    }
+
     printf("Digite o código da TAG RFID: ");
     fgets(new_tag.tag_code, MAX_LENGTH, stdin);
     new_tag.tag_code[strcspn(new_tag.tag_code, "\n")] = '\0';
+
+    // Verificar se o código da TAG RFID é hexadecimal
+    if (!is_hex_string(new_tag.tag_code)) {
+        printf("Erro: O código da TAG RFID deve ser hexadecimal.\n");
+        return;
+    }
 
     new_tag.id = (*tag_count) + 1;
 
     tags[*tag_count] = new_tag;
     (*tag_count)++;
 
-    FILE *fp;
-    fp = fopen("rfids.txt", "a");
+    FILE *fp = fopen("rfids.txt", "a");
     if (fp == NULL) {
         perror("Erro ao abrir o arquivo para escrita");
         return;
